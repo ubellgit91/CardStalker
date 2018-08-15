@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="ubell.and.com.cardstalker">
+
+    <permission
+        android:name="ubell.and.com.cardstalker.permission.MAPS_RECEIVE"
+        android:protectionLevel="signature" />
+
+    <!-- 권한설정 -->
+    <uses-permission android:name="android.permission.READ_SMS" /> <!-- 콘텐츠 프로바이더로 SMS 문자 읽어들이기 위함 -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" /> <!-- 브로드캐스트 리시버로 문자 받았을 때를 캐치하기 위함. -->
+    <uses-permission android:name="ubell.and.com.cardstalker.permission.MAPS_RECEIVE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="com.google.anroid.providers.gsf.permission.READ_GSERVICES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
+
+    <!-- 현재위치 추적하기 위한 GPS사용허가 -->
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+
+
+        <meta-data
+            android:name="com.google.android.maps.v2.API_KEY"
+            android:value="AIzaSyCty6jTMJTZ3kdi6VjE0YbL2dADugWPCM0"/>
+
+        <receiver
+            android:name=".receiver.SmsReceiver"
+            android:enabled="true">
+            <intent-filter android:priority="1">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 스플래시 액티비티. -->
+        <activity
+            android:name=".SplashActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/SplashTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".MainActivity" />
+        <activity
+            android:name=".MapsActivity"
+            android:label="Map"/>
+        <activity android:name=".permission.PermissionCheck"/>
+
+
+    </application>
+
+</manifest>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_tab_layout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".MainActivity">
+
+
+    <TextView
+        android:gravity="center"
+        android:text="Card Stalker"
+        android:textColor="@color/gray"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:background="@color/black"/>
+
+
+        <!--탭이 들어올 뷰..를 담아놓을 뷰-->
+        <android.support.design.widget.TabLayout
+            android:id="@+id/tabs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/black" />
+
+        <!--프래그먼트가 들어올 프레임 레이아웃-->
+        <android.support.v4.view.ViewPager
+            android:id="@+id/pager"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/tabs">
+
+        </android.support.v4.view.ViewPager>
+
+
+</LinearLayout>
