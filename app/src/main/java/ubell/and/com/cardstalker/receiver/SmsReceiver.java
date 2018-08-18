@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.telephony.SmsMessage;
 import android.util.Log;
 
@@ -23,7 +25,6 @@ public class SmsReceiver extends BroadcastReceiver {
     private final String TAG = "SmsReceiver";
     private PushMessage pushMessage = PushMessage.getInstance();
 
-    private String dbname = "tb_mapdb";
     private static SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
     private Context mContext;
     private String phoneNumber = "";
@@ -37,7 +38,7 @@ public class SmsReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
 
-    this.mContext = context;
+        this.mContext = context;
 
         if (intent.getAction().equals(SMS_RECEIVED)) {
             Log.i(TAG, "onReceiver() 호출"); //Log.i는 info
@@ -76,43 +77,46 @@ public class SmsReceiver extends BroadcastReceiver {
             Thread thread1 = new Thread(new Runnable() {
                 @Override
                 public void run() {
+
+                    Looper.prepare();//이벤트나 메세지를 담아놓는 Queue 생성함.(선입선출) -<일종의 메모리구조임.
+                    //쓰레드마다 하나의 이벤트루프를 가질 수 있음.(1Thread = 1Looper)
+                    //이 Loop는 여러개의 Handler를 가질 수 있음.
+                    //Handler는 prepare()를 통해 만들어진 Queue에 들어가는 메세지 객체.
+                    //이것을 이용해 다른 Thread에 작업전달가능.
+                    //Handler handler = new Handler(Looper.getMainLooper()); 이렇게 하면 MainThread(UI)에 있는 Looper를 가져와서
+                    //MainThread의 작업에 관여하겠다는 것임
+                    //핸들러를통해 다른 쓰레드로 보낼 메세지를 가져와서 메세지 변수에 담고
+                    //Message message = handler.obtainMessage(보낼메세지)
+                    //그걸 핸들러의 handler.sendMessage(message)로 전달할 수 있음.
+
                     selectBank(); //은행정보 가져오기 쓰레드처리.
 
-                    if(phoneMessage.contains("체크")&&isEqualNumber==true){
-                        if(phoneMessage.contains("예정")){
+                    if (phoneMessage.contains("체크") && isEqualNumber == true) {
+                        if (phoneMessage.contains("예정")) {
                             //문자에 예정~이라는 메세지가 들어있으면 거름.
                             return;
                         } else {
                             //그렇지않고 체크카드 사용이 맞으면 푸쉬 메시지 보내고, 로케이션 정보 db에 저장함.
-
-                            pushMessage.goPushMessage(mContext, phoneMessage, phoneNumber);
                             insertLocation(mContext);
+                            pushMessage.goPushMessage(mContext, phoneMessage, phoneNumber);
 
 
                         }
 
                     }
+                    Looper.loop();
+
                 }
             });
-
             thread1.start();
-            /*try {
-                Thread.sleep(1000); //쓰레드 1초 실행
-            } catch(InterruptedException e) {
-                e.printStackTrace();
-            }
-            thread1.interrupt();//쓰레드 중단*/
-
-            ////////////
-
-
 
         }
 
 
     }
+
     ///////////////////////////////////////////////////////
-    private void insertLocation(Context context){
+    private void insertLocation(Context context) {
 
         String lat = "";
         String lon = "";
@@ -130,7 +134,7 @@ public class SmsReceiver extends BroadcastReceiver {
 
         DBHelper dbHelper = DBHelper.getInstance(context);
         SQLiteDatabase db = dbHelper.getWritableDatabase();
-        String insertSQL = "insert into " + dbname + " (address, message, time, lat, lon) values (?, ?, ?, ?, ?)";
+        String insertSQL = "insert into tb_mapdb (address, message, time, lat, lon) values (?, ?, ?, ?, ?)";
 
         db.execSQL(insertSQL, new String[]{phoneNumber, phoneMessage, phoneGetTime, lat, lon});
         db.close();
@@ -142,21 +146,18 @@ public class SmsReceiver extends BroadcastReceiver {
 
     }
 
-    private void selectBank(){
+    private void selectBank() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT number from tb_bank",null);
-        while (cursor.moveToNext()){
+        Cursor cursor = db.rawQuery("SELECT number from tb_bank", null);
+        while (cursor.moveToNext()) {
             selectArray.add(cursor.getString(cursor.getColumnIndex("number")));
             //테이블에서 number들을 불러온다. 하나씩... 그걸 어디엔가 담는다.
             //그 다음 그 값을 하나씩 가져와서 phoneNumber랑 비교를 한다.
         }
         //
-        for(String number : selectArray){
-            if(phoneNumber.equals(number)){
-                isEqualNumber=true;
-                return;
-            } else{
-                isEqualNumber=false;
+        for (String number : selectArray) {
+            if (phoneNumber.equals(number)) {
+                isEqualNumber = true;
                 return;
             }
 
