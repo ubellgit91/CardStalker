@@ -15,6 +15,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,6 +29,7 @@ import java.util.List;
 import ubell.and.com.cardstalker.MainActivity;
 import ubell.and.com.cardstalker.MapsActivity;
 import ubell.and.com.cardstalker.R;
+import ubell.and.com.cardstalker.database.BankDTO;
 import ubell.and.com.cardstalker.database.DBHelper;
 import ubell.and.com.cardstalker.database.MessageDTO;
 import ubell.and.com.cardstalker.dialog.BottomSheetDialog;
@@ -78,48 +80,46 @@ public class UsedListFragment extends Fragment {
 
 
         private List<MessageDTO> messageDTOList = new ArrayList<MessageDTO>();
+        private List<BankDTO> bankDTOList = new ArrayList<>();
 
 
-        private int mCurrentItemSize;
-        private String _id, mLat, mLon, address, message;
-        private int mPosition;
-
-
-        private Thread thread = new Thread(new Runnable() {
+        private Thread startThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                DBHelper dbHelperp = DBHelper.getInstance(getActivity());
+                SQLiteDatabase db = dbHelperp.getReadableDatabase();
+                Cursor cursor = db.rawQuery("select * from tb_mapdb order by _id asc", null);
+
+                while (cursor.moveToNext()) {
+                    int _id = cursor.getInt(0);
+                    String address = cursor.getString(1);
+                    String message = cursor.getString(2);
+                    String time = cursor.getString(3);
+                    String lat = cursor.getString(4);
+                    String lon = cursor.getString(5);
+
+                    //db에서 불러온 값들을 DTO객체를 만들어서 DTO객체를 보관하는 arrayList에 담는다.
+                    messageDTOList.add(new MessageDTO(_id, address, message, time, lat, lon));
+                }
+
+                cursor = db.rawQuery("select * from tb_bank", null);
+                while(cursor.moveToNext()){
+                    int _id = cursor.getInt(0);
+                    String bank = cursor.getString(1);
+                    String number = cursor.getString(2);
+
+                    bankDTOList.add(new BankDTO(_id,bank,number));
+
+                }
+                db.close();
+
 
             }
         });
 
 
         public UsedListFragmentRecyclerViewAdapter() {
-
-            DBHelper dbHelperp = DBHelper.getInstance(getActivity());
-            SQLiteDatabase db = dbHelperp.getReadableDatabase();
-            Cursor cursor = db.rawQuery("select * from tb_mapdb order by _id asc", null);
-
-            while (cursor.moveToNext()) {
-
-                int _id = cursor.getInt(0);
-                String address = cursor.getString(1);
-                String message = cursor.getString(2);
-                String time = cursor.getString(3);
-                String lat = cursor.getString(4);
-                String lon = cursor.getString(5);
-
-                //db에서 불러온 값들을 DTO객체를 만들어서 DTO객체를 보관하는 arrayList에 담는다.
-                messageDTOList.add(new MessageDTO(_id, address, message, time, lat, lon));
-
-            }
-
-        }
-
-        public void updateData() {
-            messageDTOList.clear();
-
-            //DataSet에 변경이 일어났을 때 notify*수정*시킨다. 어댑터 자체를..
-            adapter.notifyDataSetChanged();
+            startThread.start();
 
         }
 
@@ -151,10 +151,16 @@ public class UsedListFragment extends Fragment {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
             //messageDTOList라는 arrayList에는 MessageDTO 객체가 db의 수만큼 들어가있다.
-            MessageDTO messageDTO = messageDTOList.get(position); //position 0번부터 갖고있는 size까지 돌면서 List를 구축함..
 
+            MessageDTO messageDTO = messageDTOList.get(position); //position 0번부터 갖고있는 size까지 돌면서 List를 구축함..
             CustomViewHolder customViewHolder = (CustomViewHolder) holder;
-            customViewHolder.textView_address.setText(messageDTO.getAddress());
+
+            for(BankDTO bankDTO : bankDTOList){
+                if(messageDTO.getAddress().equals(bankDTO.getNumber())){
+                 customViewHolder.textView_address.setText(bankDTO.getBank());
+                }
+            }
+            Log.i("address",messageDTO.getAddress());
             customViewHolder.textView_message.setText(messageDTO.getMessage());
             customViewHolder.textView_date.setText(messageDTO.getTime().toString());
             //항목을 구성하면서 한꺼번에 출력되는구나...
@@ -162,7 +168,7 @@ public class UsedListFragment extends Fragment {
             //그 리스트를 BottomSheet객체에 넘겨줘서 position과 함께 쓰도록해버리자.
             ids.add(messageDTO.get_id());
 
-            Log.i("get_id", String.valueOf(messageDTO.get_id())); //각각 포지션이 가지는 id를 넣는 수는 없을까...
+           /* Log.i("get_id", String.valueOf(messageDTO.get_id())); //각각 포지션이 가지는 id를 넣는 수는 없을까...*/
 
             //_id = String.valueOf(messageDTO.get_id()); //id는 20. 가장 나중 것이 들어가는거 같음. // id값이랑 position값을 어떻게 각각 집어넣지
 
@@ -202,14 +208,17 @@ public class UsedListFragment extends Fragment {
             textView_date = (TextView) itemView.findViewById(R.id.usedlist_date);
             linearLayout.setOnClickListener(this);
 
+            textView_message.setSingleLine(true);
+            textView_message.setEllipsize(TextUtils.TruncateAt.MARQUEE);
+            textView_message.setSelected(true);
+
         }
 
         @Override
         public void onClick(View v) {
             int itemPosition = getAdapterPosition(); //0번부터 안나오게 하기 위함..
-            Log.i("Position", String.valueOf(itemPosition));
             BottomSheetDialog bottomSheetDialog = BottomSheetDialog.getInstance();
-            bottomSheetDialog.setPosition(itemPosition);
+            bottomSheetDialog.setPosition(itemPosition);//몇번 째 포지션인지.
             bottomSheetDialog.set_ids(ids); //클래스가 다르기때문에 전체클래스를 아우르는 멤버변수 ids로 선언해줬다.
             bottomSheetDialog.show(getFragmentManager(), "bottomSheet");
 

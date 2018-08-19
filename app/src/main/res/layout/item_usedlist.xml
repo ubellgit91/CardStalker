@@ -53,14 +53,12 @@
                 android:id="@+id/uselist_message"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:text="message" />
+                android:text="message"
+                android:textSize="15dp"/>
 
         </LinearLayout>
 
     </LinearLayout>
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#808080"></View>
+
 
 </LinearLayout>

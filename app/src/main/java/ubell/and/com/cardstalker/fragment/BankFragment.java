@@ -255,6 +255,7 @@ public class BankFragment extends Fragment {
                 values.put("bank", name);
                 values.put("number",number);
                 long result = db.insert("tb_bank",null,values);
+                db.close();
                 return result;
             }
 

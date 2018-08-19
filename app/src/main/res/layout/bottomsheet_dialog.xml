@@ -6,6 +6,45 @@
     android:layout_height="wrap_content">
 
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp">
+
+            <TextView
+                android:id="@+id/bottomsheet_address"
+                android:text="address"
+                android:textSize="20dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"/>
+            <TextView
+                android:id="@+id/bottomsheet_date"
+                android:text="date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"/>
+
+        </RelativeLayout>
+
+
+
+        <TextView
+            android:paddingLeft="10dp"
+            android:id="@+id/bottomsheet_message"
+            android:text="message"
+            android:layout_width="match_parent"
+            android:layout_height="90dp" />
+
+
+    </LinearLayout>
+
+
+    <LinearLayout
 
         android:id="@+id/trace_map"
 

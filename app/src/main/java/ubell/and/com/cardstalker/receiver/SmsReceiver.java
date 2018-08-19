@@ -15,6 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
+import ubell.and.com.cardstalker.database.BankDTO;
 import ubell.and.com.cardstalker.database.DBHelper;
 import ubell.and.com.cardstalker.location.GetUsedLocation;
 
@@ -31,8 +32,9 @@ public class SmsReceiver extends BroadcastReceiver {
     private String phoneMessage = "";
     private String phoneGetTime = "";
     private DBHelper dbHelper = DBHelper.getInstance(mContext);
-    private ArrayList<String> selectArray = new ArrayList<String>();
+    private ArrayList<BankDTO> selectArray = new ArrayList<BankDTO>();
     private boolean isEqualNumber;
+    private String bankName;
 
 
     @Override
@@ -96,9 +98,10 @@ public class SmsReceiver extends BroadcastReceiver {
                             //문자에 예정~이라는 메세지가 들어있으면 거름.
                             return;
                         } else {
+
                             //그렇지않고 체크카드 사용이 맞으면 푸쉬 메시지 보내고, 로케이션 정보 db에 저장함.
                             insertLocation(mContext);
-                            pushMessage.goPushMessage(mContext, phoneMessage, phoneNumber);
+                            pushMessage.goPushMessage(mContext, phoneMessage, bankName);
 
 
                         }
@@ -148,16 +151,22 @@ public class SmsReceiver extends BroadcastReceiver {
 
     private void selectBank() {
         SQLiteDatabase db = dbHelper.getReadableDatabase();
-        Cursor cursor = db.rawQuery("SELECT number from tb_bank", null);
+        Cursor cursor = db.rawQuery("SELECT _id,bank,number from tb_bank", null);
         while (cursor.moveToNext()) {
-            selectArray.add(cursor.getString(cursor.getColumnIndex("number")));
+            int _id =Integer.valueOf(cursor.getString(cursor.getColumnIndex("_id")));
+            String bank = cursor.getString(cursor.getColumnIndex("bank"));
+            String number = cursor.getString(cursor.getColumnIndex("number"));
+
+
+            selectArray.add(new BankDTO(_id,bank,number));
             //테이블에서 number들을 불러온다. 하나씩... 그걸 어디엔가 담는다.
             //그 다음 그 값을 하나씩 가져와서 phoneNumber랑 비교를 한다.
         }
         //
-        for (String number : selectArray) {
-            if (phoneNumber.equals(number)) {
+        for (BankDTO dto : selectArray) {
+            if (phoneNumber.equals(dto.getNumber())) {
                 isEqualNumber = true;
+                bankName = dto.getBank();
                 return;
             }
 

@@ -18,12 +18,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
+
+import org.w3c.dom.Text;
 
 import java.util.ArrayList;
 
 import ubell.and.com.cardstalker.MainActivity;
 import ubell.and.com.cardstalker.MapsActivity;
 import ubell.and.com.cardstalker.R;
+import ubell.and.com.cardstalker.database.BankDTO;
 import ubell.and.com.cardstalker.database.DBHelper;
 import ubell.and.com.cardstalker.fragment.UsedListFragment;
 
@@ -37,19 +41,32 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
     private String lon;
     private int position;
     private ArrayList<Integer> db_id;
-    private String title = "발생한 흔적";
-    private String snippet;
+    private String address, date, message;
+    private TextView mAddress, mMessage, mDate;
+    private ArrayList<BankDTO> bankDTOArrayList = new ArrayList<>();
+
+
 
     private Handler handler = new Handler(Looper.getMainLooper()){
         @Override
         public void handleMessage(Message msg) {
             super.handleMessage(msg);
-          if(msg.what ==1) {//MainThread에서 intent를 이용해 맵 뿌려주는 화면으로 이동.
+          if(msg.what ==0){
+
+              for(BankDTO bankDTO : bankDTOArrayList){
+                  if(bankDTO.getNumber().equals(address)){
+                      mAddress.setText(bankDTO.getBank());
+                  }
+              }
+            mMessage.setText(message);
+            mDate.setText(date);
+
+          }else if(msg.what ==1) {//MainThread에서 intent를 이용해 맵 뿌려주는 화면으로 이동.
               Intent intent = new Intent(getActivity(), MapsActivity.class);
               intent.putExtra("lat", lat);
               intent.putExtra("lon", lon);
-              intent.putExtra("title", title);
-              intent.putExtra("snippet", snippet);
+              intent.putExtra("title", address);
+              intent.putExtra("snippet", date);
               startActivity(intent);
           } else if(msg.what ==2){
 
@@ -84,9 +101,26 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+
+
+
         View view = inflater.inflate(R.layout.bottomsheet_dialog, container, false);
         mTrace = (LinearLayout) view.findViewById(R.id.trace_map);
         mEraser = (LinearLayout) view.findViewById(R.id.eraser_trace);
+        mAddress = (TextView)view.findViewById(R.id.bottomsheet_address);
+        mMessage = (TextView) view.findViewById(R.id.bottomsheet_message);
+        mDate = (TextView)view.findViewById(R.id.bottomsheet_date);
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                selectData(db_id.get(position));
+                Message message = Message.obtain();
+                message.what = 0;
+                handler.sendMessage(message);
+            }
+        });
+        thread.start();
 
 
         mTrace.setOnClickListener(new View.OnClickListener() {
@@ -136,6 +170,8 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
                             }
                         });
 
+                        thread.start();
+
 
 
                     }
@@ -183,8 +219,20 @@ public class BottomSheetDialog extends BottomSheetDialogFragment {
         while (cursor.moveToNext()){
          lat= cursor.getString(cursor.getColumnIndex("lat"));
          lon= cursor.getString(cursor.getColumnIndex("lon"));
-         snippet = cursor.getString(cursor.getColumnIndex("message"));
+         address= cursor.getString(cursor.getColumnIndex("address"));
+         message = cursor.getString(cursor.getColumnIndex("message"));
+         date = cursor.getString(cursor.getColumnIndex("time"));
         }
+        cursor = db.rawQuery("select * from tb_bank", null);
+        while (cursor.moveToNext()){
+            int _id = cursor.getInt(0);
+            String bank = cursor.getString(1);
+            String number = cursor.getString(2);
+
+            bankDTOArrayList.add(new BankDTO(_id,bank,number));
+        }
+
+
         db.close();
 
     }
